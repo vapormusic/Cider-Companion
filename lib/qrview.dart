@@ -84,9 +84,12 @@ class _QRViewScreen extends State<QRViewScreen> {
           controller.stopCamera();
           if (result!.code!
               .contains("pair-api.ciderapp.workers.dev/?data=")) {
-            savedMachines.add(result!.code!.substring(result!.code!.indexOf('data=')+5));
-            List<String> categoriesList = List<String>.from(savedMachines as List);
-            prefs.setStringList('machines', categoriesList);
+            var b64data= result!.code!.substring(result!.code!.indexOf('data=')+5);
+            if (!savedMachines.contains(b64data)){
+              savedMachines.add(b64data);
+              List<String> categoriesList = List<String>.from(savedMachines as List);
+              prefs.setStringList('machines', categoriesList);
+            }
             Navigator.push(
               context,
               MaterialPageRoute(

@@ -6,6 +6,7 @@ import 'package:cider_remote/qrview.dart';
 import 'package:cider_remote/webview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_swipe_action_cell/flutter_swipe_action_cell.dart';
 import 'package:nsd/nsd.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
@@ -143,19 +144,39 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                           String platform = map['platform'];
                           return
                               // List with queue items and artwork
-                              ListTile(
-                            title: Text(friendlyName),
-                            subtitle: Text(host),
-                            onTap: () {
-                              print(savedMachines[index]);
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => PlayerScreen(
-                                            data: savedMachines[index],
-                                          )));
-                            },
-                          );
+                            SwipeActionCell(
+                              key: ObjectKey(index), /// this key is necessary
+                              trailingActions: <SwipeAction>[
+                                SwipeAction(
+                                    title: "delete",
+                                    onTap: (CompletionHandler handler) async {
+                                      final SharedPreferences prefs = await SharedPreferences.getInstance();
+                                      setState(() {
+                                        savedMachines.removeAt(index);
+                                        List<String> categoriesList = List<String>.from(savedMachines as List);
+                                        prefs.setStringList('machines', categoriesList);
+                                      });
+                                    },
+                                    color: Colors.red),
+                              ],
+                              child: Padding(
+                                padding: const EdgeInsets.all(1.0),
+                                child: ListTile(
+                                  title: Text(friendlyName),
+                                  subtitle: Text(host),
+                                  onTap: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => PlayerScreen(
+                                              data: savedMachines[index],
+                                            )));
+                                  },
+                                )
+                              ),
+                            );
+
+
                         }),
                     SizedBox(
                       height: 30,

@@ -1,12 +1,14 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cider_remote/player.dart';
 import 'package:cider_remote/qrview.dart';
 import 'package:cider_remote/webview.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nsd/nsd.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
 void main() {
   runApp(MyApp());
@@ -65,6 +67,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
+  var savedMachines = [];
   void _scanMDNS() async {
     final discovery = await startDiscovery('_cider-remote._tcp');
     discovery.addListener(() {
@@ -97,14 +100,68 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     animationController.repeat();
   }
 
+  void getSavedMachines() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      savedMachines = prefs.getStringList('machines') ?? [];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    _scanMDNS();
+    //_scanMDNS();
+    getSavedMachines();
     return Scaffold(
-      body: Center(
+      body: SafeArea(
+          child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
+            savedMachines.length > 0
+                ? Column(children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text("Saved devices",
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
+                                fontSize: 20.0, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    ListView.builder(
+                        shrinkWrap: true,
+                        scrollDirection: Axis.vertical,
+                        itemCount: savedMachines.length,
+                        itemBuilder: (context, index) {
+                          var map = jsonDecode(
+                              utf8.decode(base64.decode(savedMachines[index])));
+                          String host = map['host'];
+                          String token = map['token'];
+                          String friendlyName = map['friendlyName'];
+                          String backend = map['backend'];
+                          String platform = map['platform'];
+                          return
+                              // List with queue items and artwork
+                              ListTile(
+                            title: Text(friendlyName),
+                            subtitle: Text(host),
+                            onTap: () {
+                              print(savedMachines[index]);
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => PlayerScreen(
+                                            data: savedMachines[index],
+                                          )));
+                            },
+                          );
+                        }),
+                    SizedBox(
+                      height: 30,
+                    )
+                  ])
+                : Container(),
             Text(
               'Scanning Cider Remote instance',
             ),
@@ -115,10 +172,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             ),
           ],
         ),
-      ),
+      )),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          var res = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => QRViewScreen()),
           );

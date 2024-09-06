@@ -327,7 +327,7 @@ class PlayerScreenState extends State<PlayerScreen> {
                   if (index >= 0 && _appmode == "lyrics") {
                     itemScrollController.scrollTo(
                         index: index,
-                        duration: Duration(seconds: 2),
+                        duration: Duration(seconds: 1),
                         curve: Curves.easeInOutCubic);
                   }
                 }
@@ -530,19 +530,19 @@ class PlayerScreenState extends State<PlayerScreen> {
                                               style: TextStyle(
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
-                                              ),
+                                              ),  maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
                                             ),
                                             Text(
                                               _title,
                                               style: TextStyle(
                                                 fontSize: 16,
-                                              ),
+                                              ), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
                                             ),
                                             Text(
                                               _album,
                                               style: TextStyle(
-                                                fontSize: 16,
-                                              ),
+                                                fontSize: 16
+                                              ), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
                                             ),
                                           ],
                                         ),
@@ -573,7 +573,7 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             iconSize: 20,
                                             color: _shuffle_mode == 1
                                                 ? Colors.blue
-                                                : Colors.black,
+                                                : Theme.of(context).indicatorColor,
                                           ),
                                           IconButton(
                                             icon: Icon(Icons.skip_previous),
@@ -600,7 +600,7 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             iconSize: 20,
                                             color: _repeat_mode > 0
                                                 ? Colors.blue
-                                                : Colors.black,
+                                                : Theme.of(context).indicatorColor,
                                           ),
                                         ],
                                       ),
@@ -706,7 +706,7 @@ class PlayerScreenState extends State<PlayerScreen> {
                                     Expanded(child:
                                     IconButton(
                                       icon: Icon(CupertinoIcons.loop),
-                                      color: _autoplay_mode ? Colors.red : Colors.black,
+                                      color: _autoplay_mode ? Theme.of(context).colorScheme.primary : Theme.of(context).indicatorColor,
                                       onPressed: () {
                                         _getPlaybackInfo();
                                         setState(() {
@@ -762,12 +762,12 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             title: "Delete",
                                             onTap: (CompletionHandler
                                                 handler) async {
-                                              // comRPC(
-                                              //     // "POST",
-                                              //     // "queue/remove-by-index",
-                                              //     // false,
-                                              //     // token,
-                                              //     // {"index": index});
+                                              comRPC(
+                                                                                                    "POST",
+                                                                                                    "queue/remove-by-index",
+                                                                                                    false,
+                                                                                                    token,
+                                                                                                    {"index": index});
                                               setState(() {
                                                 _queue.removeAt(index);
                                               });
@@ -904,16 +904,30 @@ class PlayerScreenState extends State<PlayerScreen> {
                                                                   ["start"] <=
                                                               (_duration *
                                                                   _fullduration)
-                                                          ? Colors.blue
-                                                          : Colors
-                                                              .primaries.first,
+                                                          ? Theme.of(context).colorScheme.primary
+                                                          : Theme.of(context).indicatorColor,
                                                       fontSize: (_lyrics[index]
                                                                   ["empty"] ==
                                                               true)
                                                           ? 60
-                                                          : 26,
+                                                          : (
+                                                          _lyrics[index]
+                                                          ["start"] <=
+                                                              (_duration *
+                                                                  _fullduration)
+                                                              ? 26
+                                                              : 24
+                                                      )
+                                                      ,
                                                       fontWeight:
-                                                          FontWeight.bold,
+                                                   (
+                                                          _lyrics[index]
+                                                          ["start"] <=
+                                                              (_duration *
+                                                                  _fullduration)
+                                                              ? FontWeight.bold
+                                                              : FontWeight.w500
+                                                      ),
                                                     ),
                                                   ),
                                                 ));

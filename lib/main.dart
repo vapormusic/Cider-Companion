@@ -130,67 +130,77 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                 fontSize: 20.0, fontWeight: FontWeight.bold)),
                       ),
                     ),
-                    ListView.builder(
-                        shrinkWrap: true,
-                        scrollDirection: Axis.vertical,
-                        itemCount: savedMachines.length,
-                        itemBuilder: (context, index) {
-                          var map = jsonDecode(
-                              utf8.decode(base64.decode(savedMachines[index])));
-                          String host = map['host'];
-                          String token = map['token'];
-                          String friendlyName = map['friendlyName'];
-                          String backend = map['backend'];
-                          String platform = map['platform'];
-                          return
+                    RefreshIndicator(
+                        onRefresh: () async {
+                        // Handle the refresh action here (e.g., fetch new data)
+                        // You can call an API, update data, or perform any necessary tasks
+                        // Remember to use asynchronous functions when performing async operations
+
+                        // Example of a delay to simulate an asynchronous operation
+                        await Future.delayed(Duration(seconds: 2));
+                      },
+                      child:       Expanded(child:              ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.vertical,
+                          itemCount: savedMachines.length,
+                          itemBuilder: (context, index) {
+                            var map = jsonDecode(
+                                utf8.decode(base64.decode(savedMachines[index])));
+                            String host = map['host'];
+                            String token = map['token'];
+                            String friendlyName = map['friendlyName'];
+                            String backend = map['backend'];
+                            String platform = map['platform'];
+                            return
                               // List with queue items and artwork
-                            SwipeActionCell(
-                              key: ObjectKey(index), /// this key is necessary
-                              trailingActions: <SwipeAction>[
-                                SwipeAction(
-                                    title: "delete",
-                                    onTap: (CompletionHandler handler) async {
-                                      final SharedPreferences prefs = await SharedPreferences.getInstance();
-                                      setState(() {
-                                        savedMachines.removeAt(index);
-                                        List<String> categoriesList = List<String>.from(savedMachines as List);
-                                        prefs.setStringList('machines', categoriesList);
-                                      });
-                                    },
-                                    color: Colors.red),
-                              ],
-                              child: Padding(
-                                padding: const EdgeInsets.all(1.0),
-                                child: ListTile(
-                                  title: Text(friendlyName),
-                                  subtitle: Text(host),
-                                  onTap: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => PlayerScreen(
-                                              data: savedMachines[index],
-                                            )));
-                                  },
-                                )
-                              ),
-                            );
+                              SwipeActionCell(
+                                key: ObjectKey(index), /// this key is necessary
+                                trailingActions: <SwipeAction>[
+                                  SwipeAction(
+                                      title: "delete",
+                                      onTap: (CompletionHandler handler) async {
+                                        final SharedPreferences prefs = await SharedPreferences.getInstance();
+                                        setState(() {
+                                          savedMachines.removeAt(index);
+                                          List<String> categoriesList = List<String>.from(savedMachines as List);
+                                          prefs.setStringList('machines', categoriesList);
+                                        });
+                                      },
+                                      color: Colors.red),
+                                ],
+                                child: Padding(
+                                    padding: const EdgeInsets.all(1.0),
+                                    child: ListTile(
+                                      title: Text(friendlyName),
+                                      subtitle: Text(host),
+                                      onTap: () {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) => PlayerScreen(
+                                                  data: savedMachines[index],
+                                                )));
+                                      },
+                                    )
+                                ),
+                              );
 
 
-                        }),
+                          }))
+                    ),
                     SizedBox(
                       height: 30,
                     )
                   ])
-                : Container(),
-            Text(
-              'Scanning Cider Remote instance',
-            ),
-            Container(height: 20),
-            CircularProgressIndicator(
-              valueColor: animationController
-                  .drive(ColorTween(begin: Colors.blueAccent, end: Colors.red)),
-            ),
+                 : Container(),
+            // Text(
+            //   'Scanning Cider Remote instance',
+            // ),
+            // Container(height: 20),
+            // CircularProgressIndicator(
+            //   valueColor: animationController
+            //       .drive(ColorTween(begin: Colors.blueAccent, end: Colors.red)),
+            // ),
           ],
         ),
       )),

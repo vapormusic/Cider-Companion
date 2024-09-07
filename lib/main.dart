@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipe_action_cell/flutter_swipe_action_cell.dart';
 import 'package:nsd/nsd.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(MyApp());
@@ -69,6 +69,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   var savedMachines = [];
+  var savedMachinesDetails = [];
   void _scanMDNS() async {
     final discovery = await startDiscovery('_cider-remote._tcp');
     discovery.addListener(() {
@@ -99,71 +100,188 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     animationController =
         AnimationController(duration: new Duration(seconds: 2), vsync: this);
     animationController.repeat();
+    getSavedMachines();
+    _scanMDNS();
   }
 
   void getSavedMachines() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
+    var _savedMachines = prefs.getStringList('machines') ?? [];
+    var _savedMachinesDetails = [];
+    for (var machine in _savedMachines) {
+      var map = jsonDecode(utf8.decode(base64.decode(machine)));
+      String host = map['host'];
+      String token = map['token'];
+      String friendlyName = map['friendlyName'];
+      String backend = map['backend'];
+      String platform = map['platform'];
+      bool active = await getonlinestatus(host, token);
+      _savedMachinesDetails.add({
+        'host': host,
+        'token': token,
+        'friendlyName': friendlyName,
+        'backend': backend,
+        'platform': platform,
+        'active': active
+      });
+    }
     setState(() {
-      savedMachines = prefs.getStringList('machines') ?? [];
+      savedMachines = _savedMachines;
+      savedMachinesDetails = _savedMachinesDetails;
     });
+  }
+
+  Future<bool> getonlinestatus(String host, String token) async {
+    final headers = {
+      'apptoken': token,
+      'Content-Type': 'application/json',
+      // Replace this with the appropriate way to get the token in Dart
+    };
+    final Uri url = Uri.parse('http://$host:10767/api/v1/playback/active');
+    try {
+      var response = await http.get(url, headers: headers).timeout(
+        Duration(seconds: 1),
+        onTimeout: () {
+          return http.Response('Error', 408);
+        },
+      );
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> _showMyDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Device not connected'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Cider Remote is unable to connect to this device.'),
+                Text(
+                    'Please make sure the device is online and the remote is on the same network.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Try anyway'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => PlayerScreen(
+                        data: savedMachines[0],
+                      )),
+                );
+
+              }),
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+
+
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     //_scanMDNS();
-    getSavedMachines();
     return Scaffold(
       body: SafeArea(
           child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            savedMachines.length > 0
+            true
                 ? Column(children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                    Row(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text("Cider Remote",
+                              style: TextStyle(
+                                  fontSize: 30.0, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    Row(children: [
+                      Padding(
+                        padding: EdgeInsets.only(left: 16.0),
                         child: Text("Saved devices",
-                            textAlign: TextAlign.left,
                             style: TextStyle(
                                 fontSize: 20.0, fontWeight: FontWeight.bold)),
                       ),
-                    ),
+                      // refresh button
+                      Expanded(
+                        child: Padding(
+                            padding: EdgeInsets.only(right: 16.0),
+                            child: IconButton(
+                              icon: Icon(Icons.refresh),
+                              alignment: Alignment.centerRight,
+                              onPressed: () {
+                                getSavedMachines();
+                              },
+                            )),
+                      ),
+                    ]),
                     RefreshIndicator(
                         onRefresh: () async {
-                        // Handle the refresh action here (e.g., fetch new data)
-                        // You can call an API, update data, or perform any necessary tasks
-                        // Remember to use asynchronous functions when performing async operations
+                          // Handle the refresh action here (e.g., fetch new data)
+                          // You can call an API, update data, or perform any necessary tasks
+                          // Remember to use asynchronous functions when performing async operations
 
-                        // Example of a delay to simulate an asynchronous operation
-                        await Future.delayed(Duration(seconds: 2));
-                      },
-                      child:       Expanded(child:              ListView.builder(
-                          shrinkWrap: true,
-                          scrollDirection: Axis.vertical,
-                          itemCount: savedMachines.length,
-                          itemBuilder: (context, index) {
-                            var map = jsonDecode(
-                                utf8.decode(base64.decode(savedMachines[index])));
-                            String host = map['host'];
-                            String token = map['token'];
-                            String friendlyName = map['friendlyName'];
-                            String backend = map['backend'];
-                            String platform = map['platform'];
-                            return
-                              // List with queue items and artwork
-                              SwipeActionCell(
-                                key: ObjectKey(index), /// this key is necessary
+                          // Example of a delay to simulate an asynchronous operation
+                          getSavedMachines();
+                        },
+                        child: ListView.builder(
+                            shrinkWrap: true,
+                            scrollDirection: Axis.vertical,
+                            itemCount: savedMachinesDetails.length,
+                            itemBuilder: (context, index) {
+                              var map = savedMachinesDetails[index];
+                              String host = map['host'];
+                              String token = map['token'];
+                              String friendlyName = map['friendlyName'];
+                              String backend = map['backend'];
+                              String platform = map['platform'];
+                              bool active = map['active'];
+
+                              return
+                                  // List with queue items and artwork
+                                  SwipeActionCell(
+                                key: ObjectKey(index),
+
+                                /// this key is necessary
                                 trailingActions: <SwipeAction>[
                                   SwipeAction(
-                                      title: "delete",
+                                      title: "Delete",
                                       onTap: (CompletionHandler handler) async {
-                                        final SharedPreferences prefs = await SharedPreferences.getInstance();
+                                        final SharedPreferences prefs =
+                                            await SharedPreferences
+                                                .getInstance();
                                         setState(() {
                                           savedMachines.removeAt(index);
-                                          List<String> categoriesList = List<String>.from(savedMachines as List);
-                                          prefs.setStringList('machines', categoriesList);
+                                          List<String> categoriesList =
+                                              List<String>.from(
+                                                  savedMachines as List);
+                                          prefs.setStringList(
+                                              'machines', categoriesList);
                                         });
                                       },
                                       color: Colors.red),
@@ -173,26 +291,31 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                     child: ListTile(
                                       title: Text(friendlyName),
                                       subtitle: Text(host),
+                                      trailing: active
+                                          ? Icon(Icons.check_circle,
+                                              color: Colors.green)
+                                          : Icon(Icons.error,
+                                              color: Colors.red),
                                       onTap: () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) => PlayerScreen(
-                                                  data: savedMachines[index],
-                                                )));
+                                        active
+                                            ? Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        PlayerScreen(
+                                                          data: savedMachines[
+                                                              index],
+                                                        )))
+                                            : _showMyDialog();
                                       },
-                                    )
-                                ),
+                                    )),
                               );
-
-
-                          }))
-                    ),
+                            })),
                     SizedBox(
                       height: 30,
                     )
                   ])
-                 : Container(),
+                : Container(),
             // Text(
             //   'Scanning Cider Remote instance',
             // ),

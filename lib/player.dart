@@ -25,7 +25,7 @@ class PlayerScreenState extends State<PlayerScreen> {
   var _volume = 0.25;
   String _songId = "";
   String _artist = "";
-  String _title = "";
+  String _title = "No song playing";
   String _album = "";
   String? _artwork = "";
   String storefront = "";
@@ -105,7 +105,7 @@ class PlayerScreenState extends State<PlayerScreen> {
     final headers = {
       'apptoken': token,
       'Content-Type': 'application/json',
- // Replace this with the appropriate way to get the token in Dart
+      // Replace this with the appropriate way to get the token in Dart
     };
 
     final Uri url = Uri.parse('http://$host:10767/api/v1/playback/volume');
@@ -120,21 +120,17 @@ class PlayerScreenState extends State<PlayerScreen> {
           else {
             _volume = data["volume"];
           }
-
-        } else{
+        } else {
           print('Error2 $data["volume"] ');
         }
       });
-
-    } catch (error) {
-    }
-
+    } catch (error) {}
   }
 
   void _getQueue() async {
     var data = await comRPC("GET", "queue", false, token);
     setState(() {
-      if (data is List<dynamic>) {
+      if (data is List<dynamic> && _appmode == "queue") {
         _queue = data;
       }
     });
@@ -187,19 +183,25 @@ class PlayerScreenState extends State<PlayerScreen> {
     } catch (error) {}
   }
 
-
   Future<bool> getRegion() async {
     final headers = {
       'Content-Type': 'application/json',
       'apptoken':
-      token // Replace this with the appropriate way to get the token in Dart
+          token // Replace this with the appropriate way to get the token in Dart
     };
 
     final Uri url = Uri.parse('http://$host:10767/api/v1/amapi/run-v3');
     try {
-      final response = await http.post(url, headers: headers, body: json.encode({"path": "/v1/me/account?meta=subscription&challenge%5BsubscriptionCapabilities%5D=voice%2Cpremium"}));
+      final response = await http.post(url,
+          headers: headers,
+          body: json.encode({
+            "path":
+                "/v1/me/account?meta=subscription&challenge%5BsubscriptionCapabilities%5D=voice%2Cpremium"
+          }));
       setState(() {
-        storefront = json.decode(response.body)?["data"]?["meta"]?["subscription"]?["storefront"] ?? "us";
+        storefront = json.decode(response.body)?["data"]?["meta"]
+                ?["subscription"]?["storefront"] ??
+            "us";
       });
       return true;
     } catch (error) {
@@ -210,31 +212,25 @@ class PlayerScreenState extends State<PlayerScreen> {
   void getColors(String songId) async {
     try {
       print(storefront);
-      if (storefront == ""){
+      if (storefront == "") {
         await getRegion();
       }
-      final response = await amAPI_rpc("/v1/catalog/$storefront/songs/$songId", false, token);
+      final response = await amAPI_rpc(
+          "/v1/catalog/$storefront/songs/$songId", false, token);
       setState(() {
-       var artwork = response?["data"]?["data"]?[0]?["attributes"]?["artwork"];
-       if (artwork != null){
-         setState(() {
-           bgcolor = artwork["bgColor"] ?? bgcolor;
-           textcolor1 = artwork["textColor1"] ?? textcolor1;
-           textcolor2 = artwork["textColor2"] ?? textcolor2;
-           textcolor3 = artwork["textColor3"] ?? textcolor3;
-           print("$textcolor1 $textcolor2 $bgcolor");
-         });
-
-       }
-
+        var artwork = response?["data"]?["data"]?[0]?["attributes"]?["artwork"];
+        if (artwork != null) {
+          setState(() {
+            bgcolor = artwork["bgColor"] ?? bgcolor;
+            textcolor1 = artwork["textColor1"] ?? textcolor1;
+            textcolor2 = artwork["textColor2"] ?? textcolor2;
+            textcolor3 = artwork["textColor3"] ?? textcolor3;
+            print("$textcolor1 $textcolor2 $bgcolor");
+          });
+        }
       });
-    } catch (error) {
-    }
-
+    } catch (error) {}
   }
-
-
-
 
   static double checkDouble(dynamic value) {
     if (value is String) {
@@ -382,8 +378,7 @@ class PlayerScreenState extends State<PlayerScreen> {
     _getVolume();
     try {
       getColors(_songId);
-    } catch (_){}
-
+    } catch (_) {}
 
     _socket = IO.io(
         'http://${host}:10767',
@@ -404,14 +399,14 @@ class PlayerScreenState extends State<PlayerScreen> {
     final headers = {
       'Content-Type': 'application/json',
       'apptoken':
-      token // Replace this with the appropriate way to get the token in Dart
+          token // Replace this with the appropriate way to get the token in Dart
     };
 
     final Uri url = Uri.parse('http://$host:10767/api/v1/playback/$request');
     try {
       final response = method != "GET"
           ? await http.post(url,
-          headers: headers, body: json.encode(body ?? {}))
+              headers: headers, body: json.encode(body ?? {}))
           : await http.get(url, headers: headers);
       if (noCheck) {
         json.decode(response.body);
@@ -423,33 +418,28 @@ class PlayerScreenState extends State<PlayerScreen> {
       }
     }
   }
-    Future<dynamic> amAPI_rpc(String request, bool noCheck, String token) async {
-      final headers = {
-        'Content-Type': 'application/json',
-        'apptoken':
-        token // Replace this with the appropriate way to get the token in Dart
-      };
 
-      final Uri url = Uri.parse('http://$host:10767/api/v1/amapi/run-v3');
-      try {
-        final response =
-        await http.post(url,
-            headers: headers, body: json.encode({"path": request}));
-        if (noCheck) {
-          json.decode(response.body);
-        }
-        return json.decode(response.body);
-      } catch (error) {
-        if (!noCheck) {
-          print('Request error: $error');
-        }
+  Future<dynamic> amAPI_rpc(String request, bool noCheck, String token) async {
+    final headers = {
+      'Content-Type': 'application/json',
+      'apptoken':
+          token // Replace this with the appropriate way to get the token in Dart
+    };
+
+    final Uri url = Uri.parse('http://$host:10767/api/v1/amapi/run-v3');
+    try {
+      final response = await http.post(url,
+          headers: headers, body: json.encode({"path": request}));
+      if (noCheck) {
+        json.decode(response.body);
       }
+      return json.decode(response.body);
+    } catch (error) {
+      if (!noCheck) {
+        print('Request error: $error');
+      }
+    }
   }
-
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -492,12 +482,28 @@ class PlayerScreenState extends State<PlayerScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    IconButton(
+                                    Expanded(
+                                        child: IconButton(
+                                      style: IconButton.styleFrom(
+                                        splashFactory: NoSplash.splashFactory,
+                                      ),
                                       icon: Icon(Icons.arrow_back),
                                       onPressed: () {
                                         Navigator.pop(context);
                                       },
-                                    ),
+                                      alignment: Alignment.centerLeft,
+                                    )),
+                                    // Expanded(
+                                    //     child: IconButton(
+                                    //   style: IconButton.styleFrom(
+                                    //     splashFactory: NoSplash.splashFactory,
+                                    //   ),
+                                    //   icon: Icon(Icons.search),
+                                    //   alignment: Alignment.centerRight,
+                                    //   onPressed: () {
+                                    //     //
+                                    //   },
+                                    // ))
                                   ],
                                 ),
                                 Column(
@@ -508,41 +514,57 @@ class PlayerScreenState extends State<PlayerScreen> {
                                       // Album Art
                                       (_artwork == null)
                                           ? ConstrainedBox(
+                                              // rounded corners
+
                                               constraints:
                                                   BoxConstraints.expand(
                                                       width: 200, height: 200))
-                                          : Container(
-                                              width: 200,
-                                              height: 200,
-                                              child: CachedNetworkImage(
-                                                  imageUrl: _artwork!,
-                                                errorWidget: (context, url, error) => Container(),
-
-
-                                              )),
+                                          : ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(10.0),
+                                              child: Container(
+                                                  width: 200,
+                                                  height: 200,
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: _artwork!,
+                                                    errorWidget:
+                                                        (context, url, error) =>
+                                                            Container(),
+                                                  ))),
                                       // Track Info (Artist, Title, Album)
                                       Container(
-                                        padding: EdgeInsets.all(20),
+                                        padding: EdgeInsets.only(
+                                            left: 20.0,
+                                            right: 20,
+                                            top: 10,
+                                            bottom: 10),
                                         child: Column(
                                           children: <Widget>[
                                             Text(
-                                              _artist,
+                                              _title,
                                               style: TextStyle(
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
-                                              ),  maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
                                             ),
                                             Text(
-                                              _title,
+                                              _artist,
                                               style: TextStyle(
                                                 fontSize: 16,
-                                              ), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
                                             ),
                                             Text(
                                               _album,
-                                              style: TextStyle(
-                                                fontSize: 16
-                                              ), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                                              style: TextStyle(fontSize: 16),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
                                             ),
                                           ],
                                         ),
@@ -561,7 +583,45 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             thumbShape: RoundSliderThumbShape(
                                                 enabledThumbRadius: 0.0)),
                                       ),
-                                      SizedBox(height: 10),
+                                      // Time Indicator
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: <Widget>[
+                                          Padding(
+                                            padding: EdgeInsets.only(left: 20),
+                                            child: Text(
+                                              // format as mm:ss
+                                              Duration(
+                                                      seconds: (_duration *
+                                                              _fullduration)
+                                                          .toInt())
+                                                  .toString()
+                                                  .split('.')
+                                                  .first
+                                                  .substring(2),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: EdgeInsets.only(right: 20),
+                                            child: Text(
+                                              Duration(
+                                                      seconds: (_fullduration)
+                                                          .toInt())
+                                                  .toString()
+                                                  .split('.')
+                                                  .first
+                                                  .substring(2),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                       // Control Buttons
                                       Row(
                                         mainAxisAlignment:
@@ -573,7 +633,8 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             iconSize: 20,
                                             color: _shuffle_mode == 1
                                                 ? Colors.blue
-                                                : Theme.of(context).indicatorColor,
+                                                : Theme.of(context)
+                                                    .disabledColor,
                                           ),
                                           IconButton(
                                             icon: Icon(Icons.skip_previous),
@@ -600,7 +661,8 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             iconSize: 20,
                                             color: _repeat_mode > 0
                                                 ? Colors.blue
-                                                : Theme.of(context).indicatorColor,
+                                                : Theme.of(context)
+                                                    .disabledColor,
                                           ),
                                         ],
                                       ),
@@ -628,7 +690,7 @@ class PlayerScreenState extends State<PlayerScreen> {
                                               max: 1.0,
                                             )),
                                           ]),
-                                      SizedBox(height: 30),
+                                      SizedBox(height: 20),
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -644,7 +706,19 @@ class PlayerScreenState extends State<PlayerScreen> {
                                                 _appmode = "lyrics";
                                               });
                                             },
-                                            child: Text('Lyrics'),
+                                            child: Container(child:
+                                              // icon and text
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.library_books),
+                                                  SizedBox(width: 10),
+                                                  Text('Lyrics'),
+                                                ],
+                                                  mainAxisAlignment: MainAxisAlignment.center
+                                              ),
+
+                                            )
+                                                    ,
                                             style: ElevatedButton.styleFrom(
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
@@ -664,7 +738,19 @@ class PlayerScreenState extends State<PlayerScreen> {
                                                 _appmode = "queue";
                                               });
                                             },
-                                            child: Text('Queue'),
+                                            child: Container(child:
+                                              // icon and text
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.queue_music),
+                                                  SizedBox(width: 10),
+                                                  Text('Queue'),
+                                                ],
+                                                  mainAxisAlignment: MainAxisAlignment.center
+                                              ),
+
+                                            )
+                                                    ,
                                             style: ElevatedButton.styleFrom(
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
@@ -703,47 +789,39 @@ class PlayerScreenState extends State<PlayerScreen> {
                                         fontSize: 22.0,
                                       ),
                                     ),
-                                    Expanded(child:
-                                    IconButton(
+                                    Expanded(
+                                        child: IconButton(
                                       icon: Icon(CupertinoIcons.loop),
-                                      color: _autoplay_mode ? Theme.of(context).colorScheme.primary : Theme.of(context).indicatorColor,
+                                      color: _autoplay_mode
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : Theme.of(context).indicatorColor,
                                       onPressed: () {
                                         _getPlaybackInfo();
                                         setState(() {
-
                                           _autoplay_mode = !_autoplay_mode;
-                                          comRPC(
-                                              "POST",
-                                              "toggle-autoplay",
-                                              false,
-                                              token);
+                                          comRPC("POST", "toggle-autoplay",
+                                              false, token);
 
                                           _getQueue();
-
-
-
                                         });
                                       },
-                                      alignment:  Alignment.centerRight,
+                                      alignment: Alignment.centerRight,
                                     )),
-
                                     IconButton(
                                       icon: Icon(Icons.clear_all),
                                       onPressed: () {
                                         _getPlaybackInfo();
                                         setState(() {
-                                          comRPC(
-                                              "POST",
-                                              "queue/clear-queue",
-                                              false,
-                                              token);
+                                          comRPC("POST", "queue/clear-queue",
+                                              false, token);
 
                                           _queue.clear();
                                         });
                                       },
-                                      alignment:  Alignment.centerRight,
+                                      alignment: Alignment.centerRight,
                                     ),
-
                                   ],
                                 ),
                                 Expanded(
@@ -763,11 +841,11 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             onTap: (CompletionHandler
                                                 handler) async {
                                               comRPC(
-                                                                                                    "POST",
-                                                                                                    "queue/remove-by-index",
-                                                                                                    false,
-                                                                                                    token,
-                                                                                                    {"index": index});
+                                                  "POST",
+                                                  "queue/remove-by-index",
+                                                  false,
+                                                  token,
+                                                  {"index": index});
                                               setState(() {
                                                 _queue.removeAt(index);
                                               });
@@ -803,9 +881,11 @@ class PlayerScreenState extends State<PlayerScreen> {
                                                   width: 50,
                                                   height: 50,
                                                 ),
-                                          trailing: ReorderableDragStartListener(
+                                          trailing:
+                                              ReorderableDragStartListener(
                                             index: index,
-                                            child: const Icon(Icons.drag_handle),
+                                            child:
+                                                const Icon(Icons.drag_handle),
                                           ),
                                           onTap: () {
                                             // comRPC("POST", "/play-itemr", false, token,
@@ -867,7 +947,9 @@ class PlayerScreenState extends State<PlayerScreen> {
                                             imageUrl: _artwork!,
                                             width: 50,
                                             height: 50,
-                                      errorWidget: (context, url, error) => Container(),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    Container(),
                                           ),
                                     onTap: () {
                                       // comRPC("POST", "play", false, token,
@@ -904,30 +986,28 @@ class PlayerScreenState extends State<PlayerScreen> {
                                                                   ["start"] <=
                                                               (_duration *
                                                                   _fullduration)
-                                                          ? Theme.of(context).colorScheme.primary
-                                                          : Theme.of(context).indicatorColor,
+                                                          ? Theme.of(context)
+                                                              .colorScheme
+                                                              .primary
+                                                          : Theme.of(context)
+                                                              .indicatorColor,
                                                       fontSize: (_lyrics[index]
                                                                   ["empty"] ==
                                                               true)
                                                           ? 60
-                                                          : (
-                                                          _lyrics[index]
-                                                          ["start"] <=
-                                                              (_duration *
-                                                                  _fullduration)
+                                                          : (_lyrics[index][
+                                                                      "start"] <=
+                                                                  (_duration *
+                                                                      _fullduration)
                                                               ? 26
-                                                              : 24
-                                                      )
-                                                      ,
-                                                      fontWeight:
-                                                   (
-                                                          _lyrics[index]
-                                                          ["start"] <=
+                                                              : 24),
+                                                      fontWeight: (_lyrics[
+                                                                      index]
+                                                                  ["start"] <=
                                                               (_duration *
                                                                   _fullduration)
-                                                              ? FontWeight.bold
-                                                              : FontWeight.w500
-                                                      ),
+                                                          ? FontWeight.bold
+                                                          : FontWeight.w500),
                                                     ),
                                                   ),
                                                 ));

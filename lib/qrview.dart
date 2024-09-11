@@ -82,13 +82,19 @@ class _QRViewScreen extends State<QRViewScreen> {
         result = scanData;
         if (result != null && result!.code != null) {
           controller.stopCamera();
+          // check if the scanned data is a cider remote link or json data
+
           if (result!.code!
-              .contains("pair-api.ciderapp.workers.dev/?data=")) {
+              .contains("pair-api.ciderapp.workers.dev/?data=")
+
+          ) {
             var b64data= result!.code!.substring(result!.code!.indexOf('data=')+5);
             if (!savedMachines.contains(b64data)){
-              savedMachines.add(b64data);
-              List<String> categoriesList = List<String>.from(savedMachines as List);
-              prefs.setStringList('machines', categoriesList);
+              setState(() {
+                savedMachines.add(b64data);
+                List<String> categoriesList = List<String>.from(savedMachines as List);
+                prefs.setStringList('machines', categoriesList);
+              });
             }
             Navigator.push(
               context,
@@ -97,7 +103,25 @@ class _QRViewScreen extends State<QRViewScreen> {
                         data: result!.code!.substring(result!.code!.indexOf('data=')+5),
                       )),
             );
-          } else {
+          }
+          else if (result!.code!.contains("initialData")) {
+            if (!savedMachines.contains(result!.code!)){
+              setState(() {
+                savedMachines.add(result!.code!);
+                List<String> categoriesList = List<String>.from(savedMachines as List);
+                prefs.setStringList('machines', categoriesList);
+              });
+            }
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => PlayerScreen(
+                    data: result!.code!,
+                  )),
+            );
+          }
+
+          else {
             Navigator.push(
               context,
               MaterialPageRoute(

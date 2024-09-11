@@ -41,6 +41,7 @@ class PlayerScreenState extends State<PlayerScreen> {
   String friendlyName = "";
   String backend = "";
   String platform = "";
+  String method = "lan";
   var lyrics_idx = 0;
   var _shuffle_mode = 0;
   var _repeat_mode = 0;
@@ -107,8 +108,10 @@ class PlayerScreenState extends State<PlayerScreen> {
       'Content-Type': 'application/json',
       // Replace this with the appropriate way to get the token in Dart
     };
-
-    final Uri url = Uri.parse('http://$host:10767/api/v1/playback/volume');
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
+    final Uri url = Uri.parse('$start_url/api/v1/playback/volume');
     try {
       final response = await http.get(url, headers: headers);
       var data = json.decode(response.body);
@@ -173,8 +176,10 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-
-    final Uri url = Uri.parse('http://$host:10767/api/v1/lyrics/$id');
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
+    final Uri url = Uri.parse('$start_url/api/v1/lyrics/$id');
     try {
       final response = await http.get(url, headers: headers);
       setState(() {
@@ -189,8 +194,10 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-
-    final Uri url = Uri.parse('http://$host:10767/api/v1/amapi/run-v3');
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
+    final Uri url = Uri.parse('$start_url/api/v1/amapi/run-v3');
     try {
       final response = await http.post(url,
           headers: headers,
@@ -292,13 +299,23 @@ class PlayerScreenState extends State<PlayerScreen> {
     super.initState();
     // Enable hybrid composition.
     //if (Platform.isAndroid) WebView.platform = SurfaceAndroidWebView();
-    var map = jsonDecode(utf8.decode(base64.decode(widget.data)));
-    host = map['host'];
-    token = map['token'];
-    friendlyName = map['friendlyName'];
-    backend = map['backend'];
-    platform = map['platform'];
-
+    if (widget.data.contains("initialData")) {
+      var map = jsonDecode(widget.data);
+        host = map["address"];
+        token = map["token"];
+        friendlyName = "New Remote";
+        backend = map["initialData"]["os"];
+        platform = map["initialData"]["platform"];
+        method = map["method"];
+    } else {
+      var map = jsonDecode(utf8.decode(base64.decode(widget.data)));
+      host = map['host'];
+      token = map['token'];
+      friendlyName = map['friendlyName'];
+      backend = map['backend'];
+      platform = map['platform'];
+      method = 'lan';
+    }
     _getPlaybackInfo();
 
     void _parseSocket(data, type) {
@@ -379,9 +396,11 @@ class PlayerScreenState extends State<PlayerScreen> {
     try {
       getColors(_songId);
     } catch (_) {}
-
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
     _socket = IO.io(
-        'http://${host}:10767',
+        start_url,
         IO.OptionBuilder()
             .setTransports(['websocket'])
             .enableForceNew() // for Flutter or Dart VM
@@ -401,8 +420,10 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-
-    final Uri url = Uri.parse('http://$host:10767/api/v1/playback/$request');
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
+    final Uri url = Uri.parse('$start_url/api/v1/playback/$request');
     try {
       final response = method != "GET"
           ? await http.post(url,
@@ -425,8 +446,10 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-
-    final Uri url = Uri.parse('http://$host:10767/api/v1/amapi/run-v3');
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
+    final Uri url = Uri.parse('$start_url/api/v1/amapi/run-v3');
     try {
       final response = await http.post(url,
           headers: headers, body: json.encode({"path": request}));

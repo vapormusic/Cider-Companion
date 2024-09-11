@@ -109,18 +109,36 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     var _savedMachines = prefs.getStringList('machines') ?? [];
     var _savedMachinesDetails = [];
     for (var machine in _savedMachines) {
-      var map = jsonDecode(utf8.decode(base64.decode(machine)));
-      String host = map['host'];
-      String token = map['token'];
-      String friendlyName = map['friendlyName'];
-      String backend = map['backend'];
-      String platform = map['platform'];
-      bool active = await getonlinestatus(host, token);
+      String host = "";
+      String token = "";
+      String friendlyName = "";
+      String method = "lan";
+      String backend = "";
+      String platform = "";
+      if (machine.contains("initialData")) {
+        var map = jsonDecode(machine);
+        host = map["address"];
+        token = map["token"];
+        friendlyName = "New Remote";
+        backend = map["initialData"]["os"];
+        method = map["method"] ?? "lan";
+        platform = map["initialData"]["platform"];
+      } else {
+        var map = jsonDecode(utf8.decode(base64.decode(machine)));
+         host = map['host'];
+         token = map['token'];
+         friendlyName = map['friendlyName'];
+         method = "lan";
+         backend = map['backend'];
+         platform = map['platform'];
+      }
+      bool active = await getonlinestatus(host, token, method);
       _savedMachinesDetails.add({
         'host': host,
         'token': token,
         'friendlyName': friendlyName,
         'backend': backend,
+        'method': method,
         'platform': platform,
         'active': active
       });
@@ -131,20 +149,25 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
-  Future<bool> getonlinestatus(String host, String token) async {
+  Future<bool> getonlinestatus(String host, String token, String method) async {
     final headers = {
       'apptoken': token,
       'Content-Type': 'application/json',
       // Replace this with the appropriate way to get the token in Dart
     };
-    final Uri url = Uri.parse('http://$host:10767/api/v1/playback/active');
+    String start_url = method == "lan"
+        ? 'http://$host:10767'
+        : 'https://$host';
+    final Uri url = Uri.parse('$start_url/api/v1/playback/active');
     try {
-      var response = await http.get(url, headers: headers).timeout(
-        Duration(seconds: 1),
-        onTimeout: () {
-          return http.Response('Error', 408);
-        },
-      );
+      var response = await http.get(url, headers: headers)
+      //     .timeout(
+      //   // Duration(seconds: 2),
+      //   onTimeout: () {
+      //     return http.Response('Error', 408);
+      //   },
+      // )
+      ;
       if (response.statusCode == 200) {
         return true;
       } else {

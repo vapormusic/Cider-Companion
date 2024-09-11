@@ -41,7 +41,7 @@ class PlayerScreenState extends State<PlayerScreen> {
   String friendlyName = "";
   String backend = "";
   String platform = "";
-  String method = "lan";
+  String conn_method = "lan";
   var lyrics_idx = 0;
   var _shuffle_mode = 0;
   var _repeat_mode = 0;
@@ -108,7 +108,7 @@ class PlayerScreenState extends State<PlayerScreen> {
       'Content-Type': 'application/json',
       // Replace this with the appropriate way to get the token in Dart
     };
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     final Uri url = Uri.parse('$start_url/api/v1/playback/volume');
@@ -176,7 +176,7 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     final Uri url = Uri.parse('$start_url/api/v1/lyrics/$id');
@@ -194,7 +194,7 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     final Uri url = Uri.parse('$start_url/api/v1/amapi/run-v3');
@@ -306,7 +306,7 @@ class PlayerScreenState extends State<PlayerScreen> {
         friendlyName = "New Remote";
         backend = map["initialData"]["os"];
         platform = map["initialData"]["platform"];
-        method = map["method"];
+      conn_method = map["method"];
     } else {
       var map = jsonDecode(utf8.decode(base64.decode(widget.data)));
       host = map['host'];
@@ -314,7 +314,7 @@ class PlayerScreenState extends State<PlayerScreen> {
       friendlyName = map['friendlyName'];
       backend = map['backend'];
       platform = map['platform'];
-      method = 'lan';
+      conn_method = 'lan';
     }
     _getPlaybackInfo();
 
@@ -396,7 +396,7 @@ class PlayerScreenState extends State<PlayerScreen> {
     try {
       getColors(_songId);
     } catch (_) {}
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     _socket = IO.io(
@@ -420,10 +420,11 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     final Uri url = Uri.parse('$start_url/api/v1/playback/$request');
+    print("$url $token $conn_method");
     try {
       final response = method != "GET"
           ? await http.post(url,
@@ -446,7 +447,7 @@ class PlayerScreenState extends State<PlayerScreen> {
       'apptoken':
           token // Replace this with the appropriate way to get the token in Dart
     };
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     final Uri url = Uri.parse('$start_url/api/v1/amapi/run-v3');

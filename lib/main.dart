@@ -112,7 +112,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       String host = "";
       String token = "";
       String friendlyName = "";
-      String method = "lan";
+      String conn_method = "lan";
       String backend = "";
       String platform = "";
       if (machine.contains("initialData")) {
@@ -121,24 +121,24 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         token = map["token"];
         friendlyName = "New Remote";
         backend = map["initialData"]["os"];
-        method = map["method"] ?? "lan";
+        conn_method = map["method"] ?? "lan";
         platform = map["initialData"]["platform"];
       } else {
         var map = jsonDecode(utf8.decode(base64.decode(machine)));
          host = map['host'];
          token = map['token'];
          friendlyName = map['friendlyName'];
-         method = "lan";
+         conn_method = "lan";
          backend = map['backend'];
          platform = map['platform'];
       }
-      bool active = await getonlinestatus(host, token, method);
+      bool active = await getonlinestatus(host, token, conn_method);
       _savedMachinesDetails.add({
         'host': host,
         'token': token,
         'friendlyName': friendlyName,
         'backend': backend,
-        'method': method,
+        'method': conn_method,
         'platform': platform,
         'active': active
       });
@@ -149,13 +149,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
-  Future<bool> getonlinestatus(String host, String token, String method) async {
+  Future<bool> getonlinestatus(String host, String token, String conn_method) async {
     final headers = {
       'apptoken': token,
       'Content-Type': 'application/json',
       // Replace this with the appropriate way to get the token in Dart
     };
-    String start_url = method == "lan"
+    String start_url = conn_method == "lan"
         ? 'http://$host:10767'
         : 'https://$host';
     final Uri url = Uri.parse('$start_url/api/v1/playback/active');
@@ -178,7 +178,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _showMyDialog() async {
+  Future<void> _showMyDialog(index) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
@@ -203,7 +203,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   context,
                   MaterialPageRoute(
                       builder: (context) => PlayerScreen(
-                        data: savedMachines[0],
+                        data: savedMachines[index],
                       )),
                 );
 
@@ -305,6 +305,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                                   savedMachines as List);
                                           prefs.setStringList(
                                               'machines', categoriesList);
+                                          getSavedMachines();
                                         });
                                       },
                                       color: Colors.red),
@@ -329,7 +330,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                                           data: savedMachines[
                                                               index],
                                                         )))
-                                            : _showMyDialog();
+                                            : _showMyDialog(index);
                                       },
                                     )),
                               );
